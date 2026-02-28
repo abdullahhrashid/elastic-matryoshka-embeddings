@@ -317,8 +317,8 @@ matryoshka/
 ## Local Development Setup
 
 ```bash
-git clone https://github.com/your-username/matryoshka.git
-cd matryoshka
+git clone https://github.com/abdullahhrashid/elastic-matryoshka-embeddings.git
+cd elastic-matryoshka-embeddings
 
 python -m venv venv && source venv/bin/activate
 pip install -e .
