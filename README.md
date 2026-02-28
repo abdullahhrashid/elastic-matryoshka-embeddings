@@ -20,7 +20,7 @@
 
 ## Overview
 
-Modern embedding models output fixed-size vectors, if you want smaller, faster embeddings you have to retrain from scratch. This project demonstrates **Matryoshka Representation Learning (MRL)**, a training technique that produces a single embedding model that works correctly at any dimension prefix: 768d, 512d, 256d, 128d, or 64d. The information is nested inside the vector like a Matryoshka doll, the most discriminative features are concentrated in the first dimensions, allowing you to truncate at inference time with a well-characterised accuracy/speed tradeoff.
+Modern embedding models output fixed-size vectors, if you want smaller, faster embeddings you have to retrain from scratch. This project demonstrates **Matryoshka Representation Learning (MRL)**, a training technique that produces a single embedding model that works correctly at any dimension prefix: 768d, 512d, 256d, 128d, or 64d. The information is nested inside the vector like a Matryoshka doll, the most discriminative features are concentrated in the first dimensions, allowing you to truncate at inference time with a well-characterised accuracy/speed tradeoff. This matters in production when you need to serve different latency SLAs from a single deployed model, a mobile client gets 64d, a batch pipeline gets 768d, same weights.
 
 I fine-tuned `facebook/contriever` using a custom multi-scale InfoNCE loss with hard negatives over 180,000 triplets from MS MARCO, Natural Questions, and HotpotQA. The result is a model deployable via a FastAPI service backed by FAISS and Redis which is fully containerised with Docker Compose and ready to pull from Docker Hub.
 
@@ -90,12 +90,6 @@ class MatryoshkaInfoNCELoss(nn.Module):
 
 ---
 
-## What the numbers actually show
-
-Standard retrieval benchmarks reward absolute ranking quality. That is not what this project optimises for. The goal is to characterise the accuracy/latency Pareto frontier of a single model. The key questions are: how gracefully does quality degrade as you truncate? How much does MRL training improve that degradation curve versus naive truncation of a baseline model? The results show a consistent and widening advantage at smaller dimensions, exactly the property MRL training is designed to produce.
-
----
-
 ## Training
 
 | Parameter | Value |
@@ -113,6 +107,12 @@ Standard retrieval benchmarks reward absolute ranking quality. That is not what 
 | Optimizer | AdamW |
 
 Training data sourced from `thebajajra/hard-negative-triplets` — see [data/README.md](data/README.md) for attribution.
+
+---
+
+## What the numbers actually show
+
+Standard retrieval benchmarks reward absolute ranking quality. That is not what this project optimises for. The goal is to characterise the accuracy/latency Pareto frontier of a single model. The key questions are: how gracefully does quality degrade as you truncate? How much does MRL training improve that degradation curve versus naive truncation of a baseline model? The results show a consistent and widening advantage at smaller dimensions, exactly the property MRL training is designed to produce.
 
 ---
 
@@ -144,7 +144,7 @@ Evaluated on 5 MTEB retrieval tasks: **NFCorpus, SciFact, ArguAna, SCIDOCS, FiQA
 
 > **Key insight:** The thesis of this project is not the absolute nDCG scores, it is the MRL property itself. A single fine-tuned model exposes five deployment profiles with no retraining. At 128d you retain 82% of full-dimensional accuracy at 3× lower latency. At 64d, the MRL fine-tune outperforms the untuned baseline by +90% in nDCG@10, demonstrating that without multi-scale training, small-dimension embeddings collapse in quality. The fine-tuning is what makes truncation viable, not just fast.
 
-> **Compute context:** This model was trained on severely constrained hardware, 2 epochs, batch size 96, 180k triplets. The absolute retrieval scores reflect those constraints, not a ceiling on the approach. The relative gains (especially at low dimensions) are the meaningful signal.
+> **Compute context:** This model was trained under significant compute constraints, 2 epochs, batch size 96, 180k triplets. The absolute retrieval scores reflect those constraints, not a ceiling on the approach. The relative gains (especially at low dimensions) are the meaningful signal.
 
 ---
 
