@@ -120,15 +120,19 @@ Training data sourced from `thebajajra/hard-negative-triplets` — see [data/REA
 
 ![Per-task Breakdown](results/pareto_per_task.png)
 
+### Accuracy vs Search Latency
+
+![Accuracy vs Speed](results/accuracy_vs_speed.png)
+
 ### Numeric Summary
 
 | Dim | FAISS P50 (ms) | Avg nDCG@10 (Fine-tuned) | Avg nDCG@10 (Baseline) | Gain vs BL | Speedup vs 768d |
 |:---:|:--------------:|:------------------------:|:----------------------:|:----------:|:---------------:|
-| 768 | 21.3 | 0.365 | 0.322 | +0.042 | 1.0× |
-| 512 | 23.0 | 0.356 | 0.310 | +0.046 | 0.9× |
-| 256 | 13.8 | 0.337 | 0.274 | +0.063 | 1.5× |
-| 128 | 11.3 | 0.301 | 0.215 | +0.086 | 1.9× |
-| 64 | 8.7 | 0.258 | 0.136 | **+0.122** | 2.4× |
+| 768 | 39.3 | 0.365 | 0.322 | +0.042 | 1.0× |
+| 512 | 25.1 | 0.356 | 0.310 | +0.046 | 1.6× |
+| 256 | 14.5 | 0.337 | 0.274 | +0.063 | 2.7× |
+| 128 | 13.3 | 0.301 | 0.215 | +0.086 | 3.0× |
+| 64 | 11.7 | 0.258 | 0.136 | **+0.122** | 3.4× |
 
 Evaluated on 5 MTEB retrieval tasks: **NFCorpus, SciFact, ArguAna, SCIDOCS, FiQA2018**.
 
