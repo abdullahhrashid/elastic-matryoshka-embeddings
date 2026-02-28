@@ -1,0 +1,63 @@
+[build-system]
+requires = ['setuptools>=68.0', 'wheel']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'matryoshka-elastic-embeddings'
+version = '0.1.0'
+description = 'Dimensionally Adaptive Embeddings for efficient semantic search using Matryoshka Representation Learning'
+readme = 'README.md'
+requires-python = '>=3.10'
+authors = [{ name = 'Syed Mohammad Abdullah Rashid' }]
+
+dependencies = [
+    'torch>=2.1',
+    'numpy>=1.24',
+    'pandas>=2.0',
+    'scikit-learn>=1.3',
+    'pyarrow>=14.0',
+    'fastparquet>=2023.10',
+    'transformers==4.44.2',
+    'datasets>=2.16.0',  
+    'wandb>=0.16',
+    'pyyaml>=6.0',
+    'tqdm>=4.66',
+    'python-dotenv>=1.0',
+    'faiss-cpu>=1.7',
+    'mteb==1.39.7',
+    'Pillow>=10.0',
+    'fastapi>=0.110',
+    'uvicorn>=0.27',
+    'redis>=5.0',
+    'matplotlib>=3.7',
+    'seaborn>=0.13',
+]
+
+[project.optional-dependencies]
+dev = [
+    'pytest>=7.4',
+    'black>=23.0',
+    'ruff>=0.1',
+    'isort>=5.12',
+    'pre-commit>=3.5',
+]
+notebooks = [
+    'jupyter',
+    'ipykernel',
+    'matplotlib',
+    'seaborn'
+]
+
+[tool.setuptools.packages.find]
+where = ['.']
+include = ['src*']
+
+[tool.black]
+line-length = 88
+skip-string-normalization = true
+
+[tool.isort]
+profile = 'black'
+
+[tool.ruff]
+line-length = 88
