@@ -26,60 +26,24 @@ I fine-tuned `facebook/contriever` using a custom multi-scale InfoNCE loss with 
 
 ---
 
-## Results
-
-### Accuracy vs Embedding Dimension
-
-![Accuracy vs Dim](results/pareto_accuracy_vs_dim.png)
-
-### Per-task Breakdown (5 MTEB retrieval tasks)
-
-![Per-task Breakdown](results/pareto_per_task.png)
-
-### Accuracy vs Search Latency
-
-![Accuracy vs Speed](results/accuracy_vs_speed.png)
-
-### Numeric Summary
-
-| Dim | FAISS P50 (ms) | Avg nDCG@10 (Fine-tuned) | Avg nDCG@10 (Baseline) | Gain vs BL | Speedup vs 768d |
-|:---:|:--------------:|:------------------------:|:----------------------:|:----------:|:---------------:|
-| 768 | 21.3 | 0.365 | 0.322 | +0.042 | 1.0× |
-| 512 | 23.0 | 0.356 | 0.310 | +0.046 | 0.9× |
-| 256 | 13.8 | 0.337 | 0.274 | +0.063 | 1.5× |
-| 128 | 11.3 | 0.301 | 0.215 | +0.086 | 1.9× |
-| 64 | 8.7 | 0.258 | 0.136 | **+0.122** | 2.4× |
-
-Evaluated on 5 MTEB retrieval tasks: **NFCorpus, SciFact, ArguAna, SCIDOCS, FiQA2018**.
-
-> **Key insight:** The MRL fine-tuning is most impactful at small dimensions. At 64d, the fine-tuned model outperforms the baseline by **+90%** in nDCG@10. At 128d, you get 83% of 768d accuracy at **1.9× lower latency**.
-
----
-
 ## Architecture
 
-```
-Query (string)
-    │
-    ▼
-┌──────────────────────────────────────────────────────┐
-│  EmbeddingModel (facebook/contriever + MRL FT)       │
-│  ┌─────────────────────────────────────────────────┐ │
-│  │  BERT-style transformer encoder (110M params)   │ │
-│  │  Output: 768-dim mean-pooled embedding          │ │
-│  └─────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────┘
-    │  query_768  (1, 768)
-    │
-    ├─── truncate to dim d ──► normalise ──► FAISS (IVF, dim=d)
-    │                                            │
-    │                                    top_k candidate doc_ids
-    │                                            │
-    │                         Redis fetch raw 768d embeddings
-    │                                            │
-    └──────────────► full-dim cosine rerank ─────┘
-                                │
-                        top_n ranked results
+```mermaid
+flowchart TD
+    Q["Query string"] --> ENC
+
+    subgraph MODEL ["EmbeddingModel — facebook/contriever + MRL fine-tune"]
+        ENC["Transformer encoder\n110M params"] --> POOL["Mean pooling → 768-dim embedding"]
+    end
+
+    POOL --> TRUNC["Truncate + L2-normalise to dim d\n64 / 128 / 256 / 512 / 768"]
+    TRUNC --> FAISS["FAISS flat index\ntop_k candidates"]
+
+    POOL --> RERANK
+
+    FAISS --> REDIS["Redis\nFetch 768-dim doc embeddings"]
+    REDIS --> RERANK["Full-dim cosine rerank"]
+    RERANK --> OUT["top_n ranked results"]
 ```
 
 ### Why Mean Pooling?
@@ -132,6 +96,32 @@ class MatryoshkaInfoNCELoss(nn.Module):
 | Optimizer | AdamW |
 
 Training data sourced from `thebajajra/hard-negative-triplets` — see [data/README.md](data/README.md) for attribution.
+
+---
+
+## Results
+
+### Accuracy vs Embedding Dimension
+
+![Accuracy vs Dim](results/pareto_accuracy_vs_dim.png)
+
+### Per-task Breakdown (5 MTEB retrieval tasks)
+
+![Per-task Breakdown](results/pareto_per_task.png)
+
+### Numeric Summary
+
+| Dim | FAISS P50 (ms) | Avg nDCG@10 (Fine-tuned) | Avg nDCG@10 (Baseline) | Gain vs BL | Speedup vs 768d |
+|:---:|:--------------:|:------------------------:|:----------------------:|:----------:|:---------------:|
+| 768 | 21.3 | 0.365 | 0.322 | +0.042 | 1.0× |
+| 512 | 23.0 | 0.356 | 0.310 | +0.046 | 0.9× |
+| 256 | 13.8 | 0.337 | 0.274 | +0.063 | 1.5× |
+| 128 | 11.3 | 0.301 | 0.215 | +0.086 | 1.9× |
+| 64 | 8.7 | 0.258 | 0.136 | **+0.122** | 2.4× |
+
+Evaluated on 5 MTEB retrieval tasks: **NFCorpus, SciFact, ArguAna, SCIDOCS, FiQA2018**.
+
+> **Key insight:** The MRL fine-tuning is most impactful at small dimensions. At 64d, the fine-tuned model outperforms the baseline by **+90%** in nDCG@10. At 128d, you get 83% of 768d accuracy at **1.9× lower latency**.
 
 ---
 
