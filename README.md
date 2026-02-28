@@ -90,6 +90,12 @@ class MatryoshkaInfoNCELoss(nn.Module):
 
 ---
 
+## What the numbers actually show
+
+Standard retrieval benchmarks reward absolute ranking quality. That is not what this project optimises for. The goal is to characterise the accuracy/latency Pareto frontier of a single model. The key questions are: how gracefully does quality degrade as you truncate? How much does MRL training improve that degradation curve versus naive truncation of a baseline model? The results show a consistent and widening advantage at smaller dimensions, exactly the property MRL training is designed to produce.
+
+---
+
 ## Training
 
 | Parameter | Value |
@@ -124,7 +130,7 @@ Training data sourced from `thebajajra/hard-negative-triplets` — see [data/REA
 
 ![Accuracy vs Speed](results/accuracy_vs_speed.png)
 
-### Numeric Summary
+### Pareto Frontier Results
 
 | Dim | FAISS P50 (ms) | Avg nDCG@10 (Fine-tuned) | Avg nDCG@10 (Baseline) | Gain vs BL | Speedup vs 768d |
 |:---:|:--------------:|:------------------------:|:----------------------:|:----------:|:---------------:|
@@ -136,7 +142,9 @@ Training data sourced from `thebajajra/hard-negative-triplets` — see [data/REA
 
 Evaluated on 5 MTEB retrieval tasks: **NFCorpus, SciFact, ArguAna, SCIDOCS, FiQA2018**.
 
-> **Key insight:** The MRL fine-tuning is most impactful at small dimensions. At 64d, the fine tuned model outperforms the baseline by **+90%** in nDCG@10. At 128d, you get 83% of 768d accuracy at **1.9× lower latency**.
+> **Key insight:** The thesis of this project is not the absolute nDCG scores, it is the MRL property itself. A single fine-tuned model exposes five deployment profiles with no retraining. At 128d you retain 82% of full-dimensional accuracy at 3× lower latency. At 64d, the MRL fine-tune outperforms the untuned baseline by +90% in nDCG@10, demonstrating that without multi-scale training, small-dimension embeddings collapse in quality. The fine-tuning is what makes truncation viable, not just fast.
+
+> **Compute context:** This model was trained on severely constrained hardware, 2 epochs, batch size 96, 180k triplets. The absolute retrieval scores reflect those constraints, not a ceiling on the approach. The relative gains (especially at low dimensions) are the meaningful signal.
 
 ---
 
