@@ -20,34 +20,45 @@
 
 ## Overview
 
-Modern embedding models output fixed-size vectors — if you want smaller, faster embeddings you have to retrain from scratch. This project demonstrates **Matryoshka Representation Learning (MRL)**, a training technique that produces a single embedding model that works correctly at any dimension prefix: 768d, 512d, 256d, 128d, or 64d. The information is nested inside the vector like a Matryoshka doll — the most discriminative features are concentrated in the first dimensions, allowing you to truncate at inference time with a well-characterised accuracy/speed tradeoff.
+Modern embedding models output fixed-size vectors, if you want smaller, faster embeddings you have to retrain from scratch. This project demonstrates **Matryoshka Representation Learning (MRL)**, a training technique that produces a single embedding model that works correctly at any dimension prefix: 768d, 512d, 256d, 128d, or 64d. The information is nested inside the vector like a Matryoshka doll, the most discriminative features are concentrated in the first dimensions, allowing you to truncate at inference time with a well-characterised accuracy/speed tradeoff.
 
-I fine-tuned `facebook/contriever` using a custom multi-scale InfoNCE loss with hard negatives over 180,000 triplets from MS MARCO, Natural Questions, and HotpotQA. The result is a model deployable via a FastAPI service backed by FAISS and Redis — fully containerised with Docker Compose and ready to pull from Docker Hub.
+I fine-tuned `facebook/contriever` using a custom multi-scale InfoNCE loss with hard negatives over 180,000 triplets from MS MARCO, Natural Questions, and HotpotQA. The result is a model deployable via a FastAPI service backed by FAISS and Redis which is fully containerised with Docker Compose and ready to pull from Docker Hub.
 
 ---
 
 ## Architecture
 
 ```mermaid
-flowchart TD
-    Q["Query string"] --> ENC
+flowchart LR
+    %% Define Nodes
+    Q["Query string"]
+    ENC["Transformer encoder<br>110M params"]
+    POOL["Mean pooling → 768-dim embedding"]
+    TRUNC["Truncate + L2-normalise to dim d<br>64 / 128 / 256 / 512 / 768"]
+    FAISS["FAISS flat index<br>top_k candidates"]
+    REDIS["Redis<br>Fetch 768-dim doc embeddings"]
+    RERANK["Full-dim cosine rerank"]
+    OUT["top_n ranked results"]
+
+    %% Define Graph Connections
+    Q --> ENC
 
     subgraph MODEL ["EmbeddingModel — facebook/contriever + MRL fine-tune"]
-        ENC["Transformer encoder\n110M params"] --> POOL["Mean pooling → 768-dim embedding"]
+        ENC --> POOL
     end
 
-    POOL --> TRUNC["Truncate + L2-normalise to dim d\n64 / 128 / 256 / 512 / 768"]
-    TRUNC --> FAISS["FAISS flat index\ntop_k candidates"]
-
+    POOL --> TRUNC
+    TRUNC --> FAISS
+    FAISS --> REDIS
+    REDIS --> RERANK
+    
     POOL --> RERANK
-
-    FAISS --> REDIS["Redis\nFetch 768-dim doc embeddings"]
-    REDIS --> RERANK["Full-dim cosine rerank"]
-    RERANK --> OUT["top_n ranked results"]
+    
+    RERANK --> OUT
 ```
 
 ### Why Mean Pooling?
-Unlike CLS-token pooling, mean pooling produces embeddings that are proportional to token attention across the entire sequence, giving `contriever` its well-known robustness on long passages.
+Unlike CLS token pooling, mean pooling produces embeddings that are proportional to token attention across the entire sequence, giving `contriever` its well known robustness on long passages.
 
 ### Why FAISS Flat (exact search)?
 With 100k documents, approximate IVF methods do not yet yield a speedup over exact search on CPU. The FAISS flat index gives perfectly accurate candidate retrieval and allows measuring the pure embedding-dimension latency effect.
@@ -121,7 +132,7 @@ Training data sourced from `thebajajra/hard-negative-triplets` — see [data/REA
 
 Evaluated on 5 MTEB retrieval tasks: **NFCorpus, SciFact, ArguAna, SCIDOCS, FiQA2018**.
 
-> **Key insight:** The MRL fine-tuning is most impactful at small dimensions. At 64d, the fine-tuned model outperforms the baseline by **+90%** in nDCG@10. At 128d, you get 83% of 768d accuracy at **1.9× lower latency**.
+> **Key insight:** The MRL fine-tuning is most impactful at small dimensions. At 64d, the fine tuned model outperforms the baseline by **+90%** in nDCG@10. At 128d, you get 83% of 768d accuracy at **1.9× lower latency**.
 
 ---
 
@@ -142,7 +153,7 @@ Evaluated on 5 MTEB retrieval tasks: **NFCorpus, SciFact, ArguAna, SCIDOCS, FiQA
 
 ## Quickstart (Docker)
 
-The entire service — Redis, document index, model, and API — is bundled into a single Docker Compose stack. No manual setup required.
+The entire service which consists Redis, document index, model, and API is bundled into a single Docker Compose stack. No manual setup required.
 
 **Prerequisites**: Docker and Docker Compose installed.
 
