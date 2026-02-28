@@ -290,6 +290,7 @@ matryoshka/
 │   ├── load_redis.py                  # Bulk-loads embeddings into Redis
 │   ├── benchmark.py                   # Latency benchmarker (200 MS MARCO queries)
 │   ├── plot_tradeoff.py               # Generates accuracy_vs_speed.png
+│   ├── tokenize_data.py               # Tokenizes raw text to sequences
 │   └── plot_pareto.py                 # Generates pareto plots
 ├── src/
 │   ├── api/
