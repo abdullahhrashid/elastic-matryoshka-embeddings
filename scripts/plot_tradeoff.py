@@ -45,8 +45,8 @@ def main():
 
     ft_x = [latency[str(d)]['p50_ms'] for d in dims_sorted]
     ft_y = [ft_ndcg[d] for d in dims_sorted]
-    bl_x_768 = latency['768']['p50_ms']
-    bl_y_768 = bl_ndcg[768]
+    bl_x = [latency[str(d)]['p50_ms'] for d in dims_sorted]
+    bl_y = [bl_ndcg[d] for d in dims_sorted]
 
     plt.rcParams.update({
         'font.family': 'DejaVu Sans',
@@ -83,22 +83,31 @@ def main():
             fontweight='bold',
         )
 
-    ax.scatter(
-        [bl_x_768], [bl_y_768],
+    # Baseline curve
+    ax.plot(
+        bl_x, bl_y,
         color='#DC2626',
-        s=120,
-        marker='D',
-        zorder=4,
-        label='Baseline Contriever (768d)',
+        linewidth=2.0,
+        linestyle='--',
+        zorder=2,
     )
-    ax.annotate(
-        'Baseline\n768d',
-        xy=(bl_x_768, bl_y_768),
-        xytext=(8, -18),
-        textcoords='offset points',
-        fontsize=9,
-        color='#991B1B',
+    ax.scatter(
+        bl_x, bl_y,
+        color='#DC2626',
+        s=90,
+        marker='s',
+        zorder=3,
+        label='Baseline Contriever',
     )
+    for d, x, y in zip(dims_sorted, bl_x, bl_y):
+        ax.annotate(
+            f'{d}d',
+            xy=(x, y),
+            xytext=(6, -14),
+            textcoords='offset points',
+            fontsize=9,
+            color='#991B1B',
+        )
 
     ax.text(
         0.03, 0.95, '← Faster',
